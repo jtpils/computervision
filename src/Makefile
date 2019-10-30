@@ -6,10 +6,10 @@ ODIR= ../build
 
 LIBS= -L../lib -lANN
 
-_DEPS = reader.h gpa.h 
+_DEPS = reader.h gpa.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = reader.o gpa.o main.o ann/ANN.o ann/kd_tree.o ann/perf.o ann/kd_util.o ann/kd_split.o ann/kd_search.o ann/brute.o ann/kd_dump.o ann/bd_tree.o ann/bd_search.o ann/bd_fix_rad_search.o ann/kd_pr_search.o ann/kd_fix_rad_search.o ann/bd_pr_search.o
+_OBJ = reader.o gpa.o main.o 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 $(ODIR)/%.o: %.cpp $(DEPS)
@@ -21,4 +21,4 @@ main: $(OBJ)
 .PHONY: clean
 
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ 
+	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~
