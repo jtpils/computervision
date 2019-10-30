@@ -1,6 +1,17 @@
+// gpa.cpp
+// Date: 2019-29-10
+// Created by: Gabriel Moreira
+
 #ifndef gpa_h
 #define gpa_h
 
+#include <iostream>
+#include <Eigen/Dense>
+#include <map>
+#include <ANN/ANN.h>
+
+#define DIM 3
+typedef std::map<std::vector<int>, int> groupmap;
 
 typedef struct srtTransformation {
   float s;
@@ -9,30 +20,33 @@ typedef struct srtTransformation {
 }srtTransformation;
 
 
-float r2d(float d);
+float radiansToDegrees(float d);
 
 float eigenMSE(Eigen::MatrixXf target, Eigen::MatrixXf current);
 
-Eigen::Matrix3f rotmat(float alpha_deg, float beta_deg, float gamma_deg);
+Eigen::Matrix3f rotMat(float alpha_deg, float beta_deg, float gamma_deg);
 
 Eigen::MatrixXf* nearestNeighbors(Eigen::MatrixXf* clouds, int nClouds);
 
-Eigen::MatrixXf vector2Eigen(std::vector<float> vec);
+Eigen::MatrixXf vectorToEigen(std::vector<float> vec);
+
+std::vector<float> eigenToVector(Eigen::MatrixXf mat);
 
 Eigen::MatrixXf srtWarp(Eigen::MatrixXf A, srtTransformation transf);
 
-ANNpointArray matrix2ANN(Eigen::MatrixXf cloud);
+ANNpointArray EigenMatrixToANNpointArray(Eigen::MatrixXf cloud);
 
-void findGroups(Eigen::MatrixXf* corr, int nClouds, std::map<std::vector<int>, int>& m);
+void findGroups(Eigen::MatrixXf* corr, int nClouds, groupmap& m);
 
 srtTransformation procrustes(Eigen::MatrixXf A, Eigen::MatrixXf B);
 
+void gpaipc(Eigen::MatrixXf* clouds, int nClouds, int maxIter, bool verbose);
 
 
 class Centroid {
 
   public:
-    Centroid(Eigen::MatrixXf* clouds, int nClouds, std::map<std::vector<int>, int> m);
+    Centroid(Eigen::MatrixXf* clouds, int nClouds, groupmap m);
     Eigen::MatrixXf centroidByCloudNum(int cloudNumber);
     Eigen::MatrixXf cloudByCloudNum(int cloudNumber);
     bool isGroupValid(std::vector<int> group, int count);
@@ -42,6 +56,5 @@ class Centroid {
     std::vector<Eigen::MatrixXf>* filteredClouds;
 
 };
-
 
 #endif
