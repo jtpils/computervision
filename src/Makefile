@@ -1,4 +1,4 @@
-all: greetings cfiles cppfiles bye
+all: greetings cfiles viz bye
 
 greetings:
 	@echo ":::::: Computer vision C++ framework ::::::\n"
@@ -27,7 +27,7 @@ cfiles:
 	$(CCX) -c glad.c -Wall -o $(ODIR)/glad.o
 	@echo "\n"
 
-cppfiles: $(OBJ)
+viz: $(OBJ)
 	@echo "Linking object files...\n"
 	$(CCX) -o $@ $^ $(CFLAGS) $(LIBS)
 
