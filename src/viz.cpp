@@ -8,8 +8,6 @@
 #include "reader.h"
 #include "gpa.h"
 #include "viz.h"
-#include <future>
-#include <mutex>
 
 unsigned int VBO, VAO;
 
@@ -156,8 +154,9 @@ void updateModelsMatrix(Eigen::MatrixXf* clouds, int nClouds) {
   float meanSquaredError = 0;
   srtTransformation srt;
   Eigen::MatrixXf* indexMatrix;
-  int maxIter = 300;
+  int maxIter = 500;
   for (int iiter = 0; iiter < maxIter; ++iiter) {
+    std::cout << "Epoch: "  << iiter << " \n";
     indexMatrix = nearestNeighbors(clouds, nClouds);
     groupmap groups;
     findGroups(indexMatrix, nClouds, groups);
@@ -175,13 +174,14 @@ void updateModelsMatrix(Eigen::MatrixXf* clouds, int nClouds) {
       clouds[i] = srtWarp(clouds[i], srt);
       float meanSquaredError = eigenMSE(target, current);
 
-      std::cout << " Loss (MSE) (cloud" << i << "): "  << meanSquaredError;
+      std::cout << "   Loss (MSE) (cloud" << i << "): "  << meanSquaredError;
       std::cout << " (using " << target.rows() << " mutual neighbors)" << '\n';
 
       float newModel[16] = {srt.R(0,0), srt.R(1,0), srt.R(2,0), 0,
                             srt.R(0,1), srt.R(1,1), srt.R(2,1), 0,
                             srt.R(0,2), srt.R(1,2), srt.R(2,2), 0,
                             srt.t(0), srt.t(1), srt.t(2), 1};
+
 
       g_display_mutex.lock();
       model[i] *= glm::make_mat4(newModel);
@@ -194,51 +194,67 @@ void updateModelsMatrix(Eigen::MatrixXf* clouds, int nClouds) {
 
 int main()
 {
-    int nClouds = 3;
     Eigen::MatrixXf* clouds;
 
     float s01;
     float s02;
+    float s03;
+    float s04;
     Eigen::Matrix3f R01;
     Eigen::Matrix3f R02;
+    Eigen::Matrix3f R03;
+    Eigen::Matrix3f R04;
     Eigen::Vector3f t01;
     Eigen::Vector3f t02;
+    Eigen::Vector3f t03;
+    Eigen::Vector3f t04;
 
-    R01 = rotMat(10,0,0);
+    R01 = rotMat(-60,2,4);
     s01 = 1;
-    t01 << 2, 0, 0;
+    t01 << -5, 0, 3;
     srtTransformation transf01 = {s01, R01, t01};
 
-    R02 = rotMat(0,-12,0);
+    R02 = rotMat(-5,-1,0);
     s02 = 1;
-    t02 << 0, 1, 0;
+    t02 << 0, 0, -2;
     srtTransformation transf02 = {s02, R02, t02};
 
-    clouds = new Eigen::MatrixXf [nClouds];
+    R03 = rotMat(40,2,-2);
+    s03 = 1;
+    t03 << 0, 5, 0;
+    srtTransformation transf03 = {s03, R03, t03};
+
+    R04 = rotMat(23,0,-5);
+    s04 = 1;
+    t04 << -2, 0, 4;
+    srtTransformation transf04 = {s04, R04, t04};
+
+
+    clouds = new Eigen::MatrixXf [NCLOUDS];
     std::vector<float> cloud0_vec;
     cloud0_vec = readObj("male_head.obj");
 
     clouds[0] = vectorToEigen(cloud0_vec);
     clouds[1] = srtWarp(clouds[0], transf01);
     clouds[2] = srtWarp(clouds[0], transf02);
-    clouds[0]; ///= 20;
-    clouds[1]; ///= 20;
-    clouds[2];// /= 20;
+    clouds[3] = srtWarp(clouds[0], transf03);
+    clouds[4] = srtWarp(clouds[0], transf04);
+
     int nVertices = clouds[0].rows();
 
-    float *vertices[3];
-    std::vector<float> vecs[3];
+    float *vertices[NCLOUDS];
+    std::vector<float> vecs[NCLOUDS];
 
-    for (int i = 0; i < nClouds; ++i) {
+    for (int i = 0; i < NCLOUDS; ++i) {
       vecs[i] = eigenToVector(clouds[i]);
       vertices[i] = vecs[i].data();
-      std::cout << eigenToVector(clouds[i]).data() << std::endl;
     }
 
 
-
-    std::future<void> drawResult(std::async(drawThread, vertices, nVertices, nClouds, sizeof(float)*nVertices*3));
-    std::future<void> updateModelsMatrixResult(std::async(updateModelsMatrix, clouds, nClouds));
+    std::future<void> drawResult(std::async(drawThread, vertices, nVertices, NCLOUDS, sizeof(float)*nVertices*3));
+    int xx;
+    std::cin >> xx;
+    std::future<void> updateModelsMatrixResult(std::async(updateModelsMatrix, clouds, NCLOUDS));
 
     drawResult.get();
     //updateModelsMatrixResult.get();

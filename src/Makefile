@@ -1,22 +1,38 @@
+all: greetings cfiles cppfiles bye
+
+greetings:
+	@echo ":::::: Computer vision C++ framework ::::::\n"
+
+CCX=g++
+CC=gcc
+
 IDIR = ../include
-CC=g++
 CFLAGS=-I$(IDIR)
 
 ODIR= ../build
 
-LIBS= -L../lib -lANN
+LIBS=  -lGL -lGLU -lglfw3 -lX11 -lXxf86vm -lXrandr -lpthread -lXi -ldl -L../lib -lANN
 
-_DEPS = reader.h gpa.h
+_DEPS = reader.h gpa.h viz.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = reader.o gpa.o main.o 
+_OBJ = viz.o glad.o gpa.o reader.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 $(ODIR)/%.o: %.cpp $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-main: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+cfiles:
+	@echo "Compiling C and C++ files...\n"
+	$(CCX) -c glad.c -Wall -o $(ODIR)/glad.o
+	@echo "\n"
+
+cppfiles: $(OBJ)
+	@echo "Linking object files...\n"
+	$(CCX) -o $@ $^ $(CFLAGS) $(LIBS)
+
+bye:
+	@echo "Compilation completed!\n"
 
 .PHONY: clean
 
