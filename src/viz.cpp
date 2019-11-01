@@ -4,12 +4,12 @@
 
 #include <iostream>
 #include <vector>
+#include <math.h>
 
 #include "reader.h"
 #include "gpa.h"
 #include "viz.h"
 
-unsigned int VBO, VAO;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -17,53 +17,80 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 }
 
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-    if(firstMouse)
-    {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+        leftButtonPressed = true;
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+        leftButtonPressed = false;
+}
 
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos;
+
+void leftButtonPressedRotation(double xpos, double ypos) {
+  if(firstMouse)
+  {
     lastX = xpos;
     lastY = ypos;
+    firstMouse = false;
+  }
 
-    float sensitivity = 0.05;
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
+  float xoffset = xpos - lastX;
+  float yoffset = lastY - ypos;
+  lastX = xpos;
+  lastY = ypos;
 
-    yaw   += xoffset;
-    pitch += yoffset;
+  float xSensitivity = 0.01;
+  float ySensitivity = 0.25;
 
-    if(pitch > 89.0f)
-        pitch = 89.0f;
-    if(pitch < -89.0f)
-        pitch = -89.0f;
+  xoffset *= xSensitivity;
+  yoffset *= ySensitivity;
 
-    glm::vec3 front;
-    front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    front.y = sin(glm::radians(pitch));
-    front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    camera.front = glm::normalize(front);
-}
+  if (xoffset != 0 || yoffset != 0) {
+    float norm = glm::length(camera.pos);
+    glm::vec3 delta_pos = glm::normalize(camera.up)*yoffset + glm::cross(camera.up, camera.pos)*xoffset;
+    glm::vec3 normal_vec = glm::cross(camera.pos, camera.up);
+    camera.pos -= delta_pos;
+    camera.pos = glm::normalize(camera.pos)*norm;
+    camera.up = glm::normalize(glm::cross(normal_vec, camera.pos));
+  };
+};
+
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+  if (leftButtonPressed == false)
+    firstMouse = true;
+
+  if (leftButtonPressed == true) {
+    leftButtonPressedRotation(xpos, ypos);
+  };
+};
 
 
 void processInput(GLFWwindow *window)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
     float cameraSpeed = 0.25f; // adjust accordingly
+
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
       camera.pos += cameraSpeed * camera.front;
+
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
       camera.pos -= cameraSpeed * camera.front;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-      camera.pos -= glm::normalize(glm::cross(camera.front, camera.up)) * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-      camera.pos += glm::normalize(glm::cross(camera.front, camera.up)) * cameraSpeed;
+
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+      camera.pos += camera.up;
+
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+      camera.pos -= camera.up;
+
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+      camera.pos -= glm::cross(camera.front, camera.up);
+
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+      camera.pos += glm::cross(camera.front, camera.up);
 }
 
 
@@ -81,6 +108,7 @@ GLFWwindow* windowInit() {
   glfwMakeContextCurrent(window);
   glfwSetCursorPosCallback(window, mouse_callback);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+  glfwSetMouseButtonCallback(window, mouse_button_callback);
 
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
       std::cout << "Failed to initialize GLAD" << std::endl;
@@ -92,6 +120,19 @@ GLFWwindow* windowInit() {
 
 
 void windowLoop(GLFWwindow* window, float** vertices, int nVertices, int nClouds, int buffersize, cloudShader shader) {
+  glm::vec4 cloudColor [nClouds];
+  cloudColor[0] = glm::vec4(1.0, 1.0, 1.0, 1.0);
+  cloudColor[1] = glm::vec4(1.0, 0.0, 0.0, 1.0);
+  cloudColor[2] = glm::vec4(0.0, 1.0, 0.0, 1.0);
+  cloudColor[3] = glm::vec4(0.0, 0.0, 1.0, 1.0);
+  cloudColor[4] = glm::vec4(1.0, 1.0, 0.0, 1.0);
+  cloudColor[5] = glm::vec4(0.0, 1.0, 1.0, 1.0);
+  cloudColor[6] = glm::vec4(1.0, 0.0, 1.0, 1.0);
+  cloudColor[7] = glm::vec4(0.2, 0.5, 0.5, 1.0);
+  cloudColor[8] = glm::vec4(0.5, 0.5, 2.0, 1.0);
+  cloudColor[9] = glm::vec4(1.0, 4.0, 2.0, 1.0);
+
+  glm::vec3 vert(0.0f, 1.0f, 0.0f);
   while(!glfwWindowShouldClose(window)) {
     // Check for user input
     processInput(window);
@@ -101,14 +142,17 @@ void windowLoop(GLFWwindow* window, float** vertices, int nVertices, int nClouds
     glClear(GL_COLOR_BUFFER_BIT);
     shader.use();
 
+    camera.front = -1.0f * glm::normalize(camera.pos);
     view = glm::lookAt(camera.pos, camera.pos + camera.front, camera.up);
-    projection = glm::perspective(glm::radians(55.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    projection = glm::perspective(glm::radians(camera.fov), ASPECT_RATIO, camera.nearField, camera.farField);
 
     // Pass matrices to the shader program
     shader.setMat4("view", view);
     shader.setMat4("projection", projection);
 
     for (int i = 0; i < nClouds; ++i) {
+      shader.setVec4("cloudColor", cloudColor[i]);
+
       glBindBuffer(GL_ARRAY_BUFFER, VBO);
       glBufferData(GL_ARRAY_BUFFER, buffersize, vertices[i], GL_DYNAMIC_DRAW);
       glBindVertexArray(VAO);
@@ -195,50 +239,19 @@ void updateModelsMatrix(Eigen::MatrixXf* clouds, int nClouds) {
 int main()
 {
     Eigen::MatrixXf* clouds;
-
-    float s01;
-    float s02;
-    float s03;
-    float s04;
-    Eigen::Matrix3f R01;
-    Eigen::Matrix3f R02;
-    Eigen::Matrix3f R03;
-    Eigen::Matrix3f R04;
-    Eigen::Vector3f t01;
-    Eigen::Vector3f t02;
-    Eigen::Vector3f t03;
-    Eigen::Vector3f t04;
-
-    R01 = rotMat(-60,2,4);
-    s01 = 1;
-    t01 << -5, 0, 3;
-    srtTransformation transf01 = {s01, R01, t01};
-
-    R02 = rotMat(-5,-1,0);
-    s02 = 1;
-    t02 << 0, 0, -2;
-    srtTransformation transf02 = {s02, R02, t02};
-
-    R03 = rotMat(40,2,-2);
-    s03 = 1;
-    t03 << 0, 5, 0;
-    srtTransformation transf03 = {s03, R03, t03};
-
-    R04 = rotMat(23,0,-5);
-    s04 = 1;
-    t04 << -2, 0, 4;
-    srtTransformation transf04 = {s04, R04, t04};
-
-
     clouds = new Eigen::MatrixXf [NCLOUDS];
-    std::vector<float> cloud0_vec;
-    cloud0_vec = readObj("male_head.obj");
+    std::vector<float> cloud_vec;
+    std::string root = "../data/";
+    std::string path;
+    std::string view_no;
 
-    clouds[0] = vectorToEigen(cloud0_vec);
-    clouds[1] = srtWarp(clouds[0], transf01);
-    clouds[2] = srtWarp(clouds[0], transf02);
-    clouds[3] = srtWarp(clouds[0], transf03);
-    clouds[4] = srtWarp(clouds[0], transf04);
+    for(int i = 0; i < NCLOUDS; ++i) {
+      view_no = std::to_string(i);
+      path = root + "bunnyview" + view_no + ".obj";
+      cloud_vec = readObj(path.c_str());
+      clouds[i] = vectorToEigen(cloud_vec);
+      clouds[i] /= 20;
+    }
 
     int nVertices = clouds[0].rows();
 
@@ -250,15 +263,13 @@ int main()
       vertices[i] = vecs[i].data();
     }
 
-
     std::future<void> drawResult(std::async(drawThread, vertices, nVertices, NCLOUDS, sizeof(float)*nVertices*3));
-    int xx;
-    std::cin >> xx;
+    std::string startGPA;
+    std::cin >> startGPA;
     std::future<void> updateModelsMatrixResult(std::async(updateModelsMatrix, clouds, NCLOUDS));
 
     drawResult.get();
-    //updateModelsMatrixResult.get();
+    updateModelsMatrixResult.get();
 
     return 0;
-
 }

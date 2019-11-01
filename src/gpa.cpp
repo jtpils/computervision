@@ -317,10 +317,21 @@ Eigen::MatrixXf Centroid::cloudByCloudNum(int cloudNumber) {
 };
 
 
+void centerClouds(Eigen::MatrixXf* clouds, int nClouds) {
+  Eigen::Vector3f center;
+  for(int i = 0; i < nClouds; ++i) {
+    center = clouds[i].colwise().mean();
+    clouds[i].rowwise() -= center.transpose();
+  }
+}
+
+
 void gpaipc(Eigen::MatrixXf* clouds, int nClouds, int maxIter, bool verbose) {
   float meanSquaredError = 0;
   srtTransformation srt;
   Eigen::MatrixXf* indexMatrix;
+
+  centerClouds(clouds, nClouds);
 
   for (int iiter = 0; iiter < maxIter; ++iiter) {
     if (verbose == true)

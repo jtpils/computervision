@@ -20,15 +20,14 @@ _OBJ = viz.o glad.o gpa.o reader.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 $(ODIR)/%.o: %.cpp $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CCX) -c -o $@ $< $(CFLAGS)
 
 cfiles:
 	@echo "Compiling C and C++ files...\n"
-	$(CCX) -c glad.c -Wall -o $(ODIR)/glad.o
-	@echo "\n"
+	$(CC) -c glad.c -Wall -o $(ODIR)/glad.o
 
 viz: $(OBJ)
-	@echo "Linking object files...\n"
+	@echo "\nLinking object files...\n"
 	$(CCX) -o $@ $^ $(CFLAGS) $(LIBS)
 
 bye:
