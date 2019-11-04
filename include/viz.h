@@ -5,31 +5,35 @@
 #ifndef VIZ_H
 #define VIZ_H
 
-#define NCLOUDS 10
+#include <future>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "shader.h"
-#include <mutex>
-#include <future>
+#include <Eigen/Dense>
 
-std::mutex g_display_mutex;
+//#include <opencv2/opencv.hpp>
+
+#include "shader.h"
+#include "common.h"
+
 
 //------------------------------------------------------------------------------
 // VERTEX AND ATTRIBUTE BUFFERS
-unsigned int VBO;
-unsigned int VAO;
+static unsigned int VBO;
+static unsigned int VAO;
 //------------------------------------------------------------------------------
 
+
 //------------------------------------------------------------------------------
-// SCREEN
+// SCREEN GLOBALS
 const unsigned int SCR_WIDTH  = 800;
 const unsigned int SCR_HEIGHT = 500;
-float ASPECT_RATIO = (float) SCR_WIDTH / (float) SCR_HEIGHT;
+const float ASPECT_RATIO      = (float) SCR_WIDTH / (float) SCR_HEIGHT;
 //------------------------------------------------------------------------------
+
 
 //------------------------------------------------------------------------------
 // CAMERA'S COORDINATE SYSTEM AXIS INITIALIZATION
@@ -41,41 +45,26 @@ typedef struct Camera {
   float nearField;
   float farField;
 }Camera;
-
-Camera camera = {glm::vec3(0.0f, 0.0f, 35.0f),
-                 glm::vec3(0.0f, 0.0f, -1.0f),
-                 glm::vec3(0.0f, 1.0f,  0.0f),
-                 45.0f,
-                 0.1f,
-                 100.0f};
 //------------------------------------------------------------------------------
 
-//------------------------------------------------------------------------------
-// MOUSE CONTROL GLOBAL VARIABLES
-bool firstMouse        = true;
-bool leftButtonPressed = false;
-float lastX            =  SCR_WIDTH / 2.0;
-float lastY            =  SCR_HEIGHT / 2.0;
-//------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
-// COORDINATE SYSTEM TRANSFORMATION MATRICES
-//------------------------------------------------------------------------------
-glm::mat4 model[NCLOUDS]  = {glm::mat4(1.0f),
-                             glm::mat4(1.0f),
-                             glm::mat4(1.0f),
-                             glm::mat4(1.0f),
-                             glm::mat4(1.0f),
-                             glm::mat4(1.0f),
-                             glm::mat4(1.0f),
-                             glm::mat4(1.0f),
-                             glm::mat4(1.0f),
-                             glm::mat4(1.0f)};
-
-glm::mat4 view            =  glm::mat4(1.0f);
-glm::mat4 projection      =  glm::mat4(1.0f);
+// MOUSE INPUT CONTROL
+typedef struct Mouse {
+  bool firstMouse;
+  bool leftButtonPressed;
+  float lastX;
+  float lastY;
+}Mouse;
 //------------------------------------------------------------------------------
 
+
+//------------------------------------------------------------------------------
+void genViewMat(Camera camera);
+//------------------------------------------------------------------------------
+void genModelMat(int modelNum, glm::mat4 newModel);
+//------------------------------------------------------------------------------
+void genProjectionMat(Camera camera);
 //------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 //------------------------------------------------------------------------------
@@ -87,9 +76,21 @@ void processInput(GLFWwindow *window);
 //------------------------------------------------------------------------------
 GLFWwindow* windowInit();
 //------------------------------------------------------------------------------
-void windowLoop(GLFWwindow* window, float** vertices, int nVertices, int nClouds, int buffersize, cloudShader shader);
+void windowLoop(GLFWwindow* window, float** vertices, int nVertices, int nClouds, cloudShader shader);
 //------------------------------------------------------------------------------
-void drawThread(float **vertices, int nVertices, int nClouds, int buffersize);
+void drawThread(float **vertices, int nVertices, int nClouds);
 //------------------------------------------------------------------------------
+void clearScreen();
+//------------------------------------------------------------------------------
+void updateModelsMatrix(Eigen::MatrixXf* clouds, int nClouds);
+//------------------------------------------------------------------------------
+//cv::Mat generateCalibrationMat(float fx, float fy, float x0, float y0);
+//------------------------------------------------------------------------------
+Camera cameraInit();
+//------------------------------------------------------------------------------
+Mouse mouseInit();
+//------------------------------------------------------------------------------
+
+
 
 #endif
