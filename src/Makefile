@@ -1,22 +1,24 @@
-all: greetings cfiles viz bye
+all: greetings cfiles main bye
 
 greetings:
-	@echo ":::::: Computer vision C++ framework ::::::\n"
+	@echo "::::::::::: Computer vision C++ framework :::::::::::\n"
 
-CCX=g++
-CC=gcc
+CCX = g++
+CC = gcc
 
 IDIR = ../include
-CFLAGS=-I$(IDIR)
+CFLAGS = -I$(IDIR)
 
-ODIR= ../build
+ODIR = ../build
 
-LIBS=  -lGL -lGLU -lglfw3 -lX11 -lXxf86vm -lXrandr -lpthread -lXi -ldl -L../lib -lANN
+LIBS =  -lGL -lGLU -lglfw3 -lX11 -lXxf86vm -lXrandr -lpthread -lXi -ldl \
+        -L../lib -lANN
+
 
 _DEPS = reader.h gpa.h viz.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = viz.o glad.o gpa.o reader.o
+_OBJ = main.o viz.o glad.o gpa.o reader.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 $(ODIR)/%.o: %.cpp $(DEPS)
@@ -26,12 +28,12 @@ cfiles:
 	@echo "Compiling C and C++ files...\n"
 	$(CC) -c glad.c -Wall -o $(ODIR)/glad.o
 
-viz: $(OBJ)
+main: $(OBJ)
 	@echo "\nLinking object files...\n"
-	$(CCX) -o $@ $^ $(CFLAGS) $(LIBS)
+	$(CCX) -o $@ $^ $(CFLAGS) $(LIBS) 
 
 bye:
-	@echo "Compilation completed!\n"
+	@echo "\nCompilation completed!\n"
 
 .PHONY: clean
 
