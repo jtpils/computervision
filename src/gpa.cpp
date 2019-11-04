@@ -5,12 +5,14 @@
 #include <vector>
 #include <map>
 #include <math.h>
+
 #include <Eigen/Dense>
-
 #include <ANN/ANN.h>
+
 #include "gpa.h"
+#include "common.h"
 
-
+//------------------------------------------------------------------------------
 float eigenMSE(Eigen::MatrixXf target, Eigen::MatrixXf current) {
   // Computes the mean-square error between two point matrices
   Eigen::MatrixXf delta;
@@ -21,9 +23,10 @@ float eigenMSE(Eigen::MatrixXf target, Eigen::MatrixXf current) {
   ddt = delta * delta.transpose();
   mse = ddt.trace() / delta.rows();
   return mse;
-}
+};
+//------------------------------------------------------------------------------
 
-
+//------------------------------------------------------------------------------
 std::vector<float> eigenToVector(Eigen::MatrixXf mat) {
   // Converts Eigen::Matrix to std::vector<float> assuming a row-major
   // storage order. The data is fully copied.
@@ -31,9 +34,10 @@ std::vector<float> eigenToVector(Eigen::MatrixXf mat) {
   auxMat = mat.transpose();
   std::vector<float> vec(auxMat.data(), auxMat.data() + auxMat.size());
   return vec;
-}
+};
+//------------------------------------------------------------------------------
 
-
+//------------------------------------------------------------------------------
 Eigen::MatrixXf vectorToEigen(std::vector<float> vec) {
   // Converts std::vector<float> to Eigen::MatriXf assuming a row-major
   // storage order, i.e., [x0, y0, z0, x1, ..., zn] gets converted to
@@ -53,15 +57,17 @@ Eigen::MatrixXf vectorToEigen(std::vector<float> vec) {
     mat(i, j) = vec[k];
   }
   return mat;
-}
+};
+//------------------------------------------------------------------------------
 
-
+//------------------------------------------------------------------------------
 float degreesToRadians(float d) {
   // Converts an input in degrees to radians
   return (d / 180.0) * ((float) M_PI);
 };
+//------------------------------------------------------------------------------
 
-
+//------------------------------------------------------------------------------
 Eigen::Matrix3f rotMat(float alpha_deg, float beta_deg, float gamma_deg) {
   // Creates a 3x3 rotation matrix according to the provided rotation angles
   // about the z-axis, y-axis and x-axis (according to the order of the arguments)
@@ -69,7 +75,7 @@ Eigen::Matrix3f rotMat(float alpha_deg, float beta_deg, float gamma_deg) {
   Eigen::Matrix3f Ry;
   Eigen::Matrix3f Rz;
   float alpha_rad = degreesToRadians(alpha_deg);
-  float beta_rad = degreesToRadians(beta_deg);
+  float beta_rad  = degreesToRadians(beta_deg);
   float gamma_rad = degreesToRadians(gamma_deg);
 
   Rx << 1, 0, 0,
@@ -88,8 +94,9 @@ Eigen::Matrix3f rotMat(float alpha_deg, float beta_deg, float gamma_deg) {
 
   return R;
 };
+//------------------------------------------------------------------------------
 
-
+//------------------------------------------------------------------------------
 Eigen::MatrixXf srtWarp(Eigen::MatrixXf A, srtTransformation transf) {
   // Transforms a nPts x 3 point matrix A according to a SRT transformation
   Eigen::MatrixXf srtA;
@@ -99,8 +106,9 @@ Eigen::MatrixXf srtWarp(Eigen::MatrixXf A, srtTransformation transf) {
   transfA = srtA.transpose();
   return transfA;
 };
+//------------------------------------------------------------------------------
 
-
+//------------------------------------------------------------------------------
 srtTransformation procrustes(Eigen::MatrixXf A, Eigen::MatrixXf B) {
   // Solves the least squares Procrustes problem of finding the SRT
   // srtTransformation that minimizes the error E = sAR + tj - B
@@ -133,8 +141,9 @@ srtTransformation procrustes(Eigen::MatrixXf A, Eigen::MatrixXf B) {
 
   return transf;
 };
+//------------------------------------------------------------------------------
 
-
+//------------------------------------------------------------------------------
 ANNpointArray EigenMatrixToANNpointArray(Eigen::MatrixXf cloud) {
   // Converts an EigenMatrix to an ANNpointArray to be used when
   // computing nearest neighbors.
@@ -151,13 +160,14 @@ ANNpointArray EigenMatrixToANNpointArray(Eigen::MatrixXf cloud) {
   };
   return dataPts;
 };
+//------------------------------------------------------------------------------
 
-
+//------------------------------------------------------------------------------
 Eigen::MatrixXf* nearestNeighbors(Eigen::MatrixXf* clouds, int nClouds) {
   // Creates nClouds correspondence matrices with the indices of the
   // nearest neighbors of each cloud, in all the other clouds.
   int nPts = clouds[0].rows();
-  int dim = clouds[0].cols();
+  int dim  = clouds[0].cols();
   Eigen::MatrixXf* corr;
   corr = new Eigen::MatrixXf [nClouds];           // correspondence matrix
 
@@ -167,9 +177,9 @@ Eigen::MatrixXf* nearestNeighbors(Eigen::MatrixXf* clouds, int nClouds) {
   }
 
   // Allocate stuff before the search loop
-  ANNidxArray nnIdx = new ANNidx[1];					    // near neighbor index
-  ANNdistArray dists = new ANNdist[1];            // near neighbor distance
-  ANNpoint queryPt = annAllocPt(dim);             // point we lookin for
+  ANNidxArray nnIdx     = new ANNidx[1];					// near neighbor index
+  ANNdistArray dists    = new ANNdist[1];         // near neighbor distance
+  ANNpoint queryPt      = annAllocPt(dim);        // point we lookin for
   ANNpointArray dataPts = annAllocPts(nPts, dim); // search space
 
   for (int ki = 0; ki < nClouds; ki++) {
@@ -193,8 +203,9 @@ Eigen::MatrixXf* nearestNeighbors(Eigen::MatrixXf* clouds, int nClouds) {
   delete [] dists;                                // clean things up
   return corr;
 };
+//------------------------------------------------------------------------------
 
-
+//------------------------------------------------------------------------------
 void findGroups(Eigen::MatrixXf* corr, int nClouds, groupmap& m) {
   // Finds groups of points which are mutually nearest neighbors. A map m holds
   // the information about the groups. The keys are the std::vectors describing
@@ -229,8 +240,9 @@ void findGroups(Eigen::MatrixXf* corr, int nClouds, groupmap& m) {
     };
   };
 };
+//------------------------------------------------------------------------------
 
-
+//------------------------------------------------------------------------------
 Centroid::Centroid(Eigen::MatrixXf* clouds, int nClouds, groupmap m) {
   int count;
   int cloudNumber;
@@ -272,8 +284,9 @@ Centroid::Centroid(Eigen::MatrixXf* clouds, int nClouds, groupmap m) {
     ++groupNumber;
   };
 };
+//------------------------------------------------------------------------------
 
-
+//------------------------------------------------------------------------------
 bool Centroid::isGroupValid(std::vector<int> group, int count) {
   int numCloudsInGroup;
   // Get number of clouds in the group (number of entries different from -1)
@@ -286,8 +299,9 @@ bool Centroid::isGroupValid(std::vector<int> group, int count) {
     return false;
   }
 };
+//------------------------------------------------------------------------------
 
-
+//------------------------------------------------------------------------------
 Eigen::MatrixXf Centroid::centroidByCloudNum(int cloudNumber) {
   // Get a matrix with the centroid points calculated with cloud cloudsNumber
   Eigen::MatrixXf mat = Eigen::MatrixXf::Zero(centralClouds[cloudNumber].size(), DIM);
@@ -300,8 +314,9 @@ Eigen::MatrixXf Centroid::centroidByCloudNum(int cloudNumber) {
   }
   return mat;
 };
+//------------------------------------------------------------------------------
 
-
+//------------------------------------------------------------------------------
 Eigen::MatrixXf Centroid::cloudByCloudNum(int cloudNumber) {
   // Get a matrix with the points from cloud cloudNumber which were used to
   // compute the centroid
@@ -315,23 +330,29 @@ Eigen::MatrixXf Centroid::cloudByCloudNum(int cloudNumber) {
   }
   return mat;
 };
+//------------------------------------------------------------------------------
 
-
+//------------------------------------------------------------------------------
 void centerClouds(Eigen::MatrixXf* clouds, int nClouds) {
+  // Centers EACH cloud independently with respect to its centroid.
   Eigen::Vector3f center;
   for(int i = 0; i < nClouds; ++i) {
     center = clouds[i].colwise().mean();
     clouds[i].rowwise() -= center.transpose();
-  }
-}
+  };
+};
+//------------------------------------------------------------------------------
 
+//------------------------------------------------------------------------------
+void gpaipc(Eigen::MatrixXf* clouds, int nClouds, int maxIter, glm::mat4* model, bool verbose) {
+  // Performs the generalized Procrustes analysis on the provided point clouds.
+  // The clouds are registered inplace (copy the variable clouds beforehand if
+  // you dont want to change it). Variable models stores the 4x4 transformation
+  // matrices - one for each point cloud.
 
-void gpaipc(Eigen::MatrixXf* clouds, int nClouds, int maxIter, bool verbose) {
   float meanSquaredError = 0;
   srtTransformation srt;
   Eigen::MatrixXf* indexMatrix;
-
-  centerClouds(clouds, nClouds);
 
   for (int iiter = 0; iiter < maxIter; ++iiter) {
     if (verbose == true)
@@ -359,6 +380,16 @@ void gpaipc(Eigen::MatrixXf* clouds, int nClouds, int maxIter, bool verbose) {
 
       srt = procrustes(current, target);
       clouds[i] = srtWarp(clouds[i], srt);
+
+      float newModel[16] = {srt.R(0,0), srt.R(1,0), srt.R(2,0), 0,
+                            srt.R(0,1), srt.R(1,1), srt.R(2,1), 0,
+                            srt.R(0,2), srt.R(1,2), srt.R(2,2), 0,
+                            srt.t(0), srt.t(1), srt.t(2), 1};
+
+      g_display_mutex.lock();
+      model[i] *= glm::make_mat4(newModel);
+      g_display_mutex.unlock();
     }
   }
 };
+//------------------------------------------------------------------------------

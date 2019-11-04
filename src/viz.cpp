@@ -6,40 +6,95 @@
 #include <vector>
 #include <math.h>
 
-#include "reader.h"
 #include "gpa.h"
 #include "viz.h"
 
 
+//-----------------------------------------------------------------------------------------
+// Global variables declaration and definition
+static Mouse mouse           = mouseInit();
+static Camera camera         = cameraInit();
+static glm::mat4 view        = glm::mat4(1.0f);
+static glm::mat4 projection  = glm::mat4(1.0f);
+static glm::mat4* model      = new glm::mat4 [NCLOUDS];
+//-----------------------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------------------
+Camera cameraInit() {
+  Camera camera    = {};
+  camera.pos       = glm::vec3(0.0f, 0.0f, 35.0f);   // Camera's position
+  camera.front     = glm::vec3(0.0f, 0.0f, -1.0f);   // Camera's pointing direction
+  camera.up        = glm::vec3(0.0f, 1.0f, 0.0f);    // Camera's vertical axis
+  camera.fov       = 45.0f;                          // Field of view
+  camera.nearField = 0.1f;                           // Near field
+  camera.farField  = 100.0f;                         // Far field
+
+  return camera;
+};
+//-----------------------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------------------
+Mouse mouseInit() {
+  Mouse mouse             = {};
+  mouse.firstMouse        = true;
+  mouse.leftButtonPressed = false;
+  mouse.lastX             = SCR_WIDTH / 2.0;
+  mouse.lastY             = SCR_HEIGHT / 2.0;
+
+  return mouse;
+};
+//-----------------------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------------------
+void genViewMat(Camera camera) {
+  view = glm::lookAt(camera.pos, camera.pos + camera.front, camera.up);
+};
+//-----------------------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------------------
+void genModelMat(int modelNum, glm::mat4 newModel) {
+  model[modelNum] = newModel;
+};
+//-----------------------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------------------
+void genProjectionMat(Camera camera) {
+  projection = glm::perspective(glm::radians(camera.fov), ASPECT_RATIO, camera.nearField, camera.farField);
+};
+//-----------------------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
-}
+};
+//-----------------------------------------------------------------------------------------
 
-
+//-----------------------------------------------------------------------------------------
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-        leftButtonPressed = true;
+        mouse.leftButtonPressed = true;
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
-        leftButtonPressed = false;
+        mouse.leftButtonPressed = false;
 }
+//-----------------------------------------------------------------------------------------
 
-
+//-----------------------------------------------------------------------------------------
 void leftButtonPressedRotation(double xpos, double ypos) {
-  if(firstMouse)
+  if(mouse.firstMouse)
   {
-    lastX = xpos;
-    lastY = ypos;
-    firstMouse = false;
+    mouse.lastX      = xpos;
+    mouse.lastY      = ypos;
+    mouse.firstMouse = false;
   }
 
-  float xoffset = xpos - lastX;
-  float yoffset = lastY - ypos;
-  lastX = xpos;
-  lastY = ypos;
+  float xoffset = xpos - mouse.lastX;
+  float yoffset = mouse.lastY - ypos;
+  mouse.lastX   = xpos;
+  mouse.lastY   = ypos;
 
-  float xSensitivity = 0.01;
+  float xSensitivity = 0.02;
   float ySensitivity = 0.25;
 
   xoffset *= xSensitivity;
@@ -54,19 +109,21 @@ void leftButtonPressedRotation(double xpos, double ypos) {
     camera.up = glm::normalize(glm::cross(normal_vec, camera.pos));
   };
 };
+//-----------------------------------------------------------------------------------------
 
-
+//-----------------------------------------------------------------------------------------
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-  if (leftButtonPressed == false)
-    firstMouse = true;
+  if (mouse.leftButtonPressed == false)
+    mouse.firstMouse = true;
 
-  if (leftButtonPressed == true) {
+  if (mouse.leftButtonPressed == true) {
     leftButtonPressedRotation(xpos, ypos);
   };
 };
+//-----------------------------------------------------------------------------------------
 
-
+//-----------------------------------------------------------------------------------------
 void processInput(GLFWwindow *window)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -91,9 +148,10 @@ void processInput(GLFWwindow *window)
 
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
       camera.pos += glm::cross(camera.front, camera.up);
-}
+};
+//-----------------------------------------------------------------------------------------
 
-
+//-----------------------------------------------------------------------------------------
 GLFWwindow* windowInit() {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -102,7 +160,7 @@ GLFWwindow* windowInit() {
 
   GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Nabla", NULL, NULL);
   if (window == NULL) {
-      std::cout << "Failed to create GLFW window" << std::endl;
+      std::cout << "Failed to create GLFW window." << std::endl;
       glfwTerminate();
   }
   glfwMakeContextCurrent(window);
@@ -111,15 +169,25 @@ GLFWwindow* windowInit() {
   glfwSetMouseButtonCallback(window, mouse_button_callback);
 
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-      std::cout << "Failed to initialize GLAD" << std::endl;
+      std::cout << "Failed to initialize GLAD." << std::endl;
   }
 
   glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
   return window;
-}
+};
+//-----------------------------------------------------------------------------------------
 
+//-----------------------------------------------------------------------------------------
+void clearScreen() {
+  glClearColor(0.0f, 0.f, 0.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+};
+//-----------------------------------------------------------------------------------------
 
-void windowLoop(GLFWwindow* window, float** vertices, int nVertices, int nClouds, int buffersize, cloudShader shader) {
+//-----------------------------------------------------------------------------------------
+void windowLoop(GLFWwindow* window, float** vertices, int nVertices, int nClouds, cloudShader shader) {
+  int buffersize = sizeof(float) * nVertices * DIM;
+
   glm::vec4 cloudColor [nClouds];
   cloudColor[0] = glm::vec4(1.0, 1.0, 1.0, 1.0);
   cloudColor[1] = glm::vec4(1.0, 0.0, 0.0, 1.0);
@@ -132,23 +200,20 @@ void windowLoop(GLFWwindow* window, float** vertices, int nVertices, int nClouds
   cloudColor[8] = glm::vec4(0.5, 0.5, 2.0, 1.0);
   cloudColor[9] = glm::vec4(1.0, 4.0, 2.0, 1.0);
 
-  glm::vec3 vert(0.0f, 1.0f, 0.0f);
+  genProjectionMat(camera);
+  shader.setMat4("projection", projection);
+
   while(!glfwWindowShouldClose(window)) {
     // Check for user input
     processInput(window);
 
     // Rendering commands here
-    glClearColor(0.0f, 0.f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    clearScreen();
     shader.use();
 
     camera.front = -1.0f * glm::normalize(camera.pos);
-    view = glm::lookAt(camera.pos, camera.pos + camera.front, camera.up);
-    projection = glm::perspective(glm::radians(camera.fov), ASPECT_RATIO, camera.nearField, camera.farField);
-
-    // Pass matrices to the shader program
+    genViewMat(camera);
     shader.setMat4("view", view);
-    shader.setMat4("projection", projection);
 
     for (int i = 0; i < nClouds; ++i) {
       shader.setVec4("cloudColor", cloudColor[i]);
@@ -166,10 +231,12 @@ void windowLoop(GLFWwindow* window, float** vertices, int nVertices, int nClouds
     glfwPollEvents();
     glfwSwapBuffers(window);
   }
-}
+};
+//-----------------------------------------------------------------------------------------
 
-
-void drawThread(float **vertices, int nVertices, int nClouds, int buffersize) {
+//-----------------------------------------------------------------------------------------
+void drawThread(float **vertices, int nVertices, int nClouds) {
+  int buffersize = sizeof(float) * nVertices * DIM;
   GLFWwindow* window = windowInit();
   cloudShader shader("vertexShader.vs", "fragmentShader.fs");
 
@@ -186,90 +253,28 @@ void drawThread(float **vertices, int nVertices, int nClouds, int buffersize) {
   glEnableVertexAttribArray(0);
 
   shader.use();
-  windowLoop(window, vertices, nVertices, nClouds, buffersize, shader);
+  windowLoop(window, vertices, nVertices, nClouds, shader);
 
   glDeleteVertexArrays(1, &VAO);
   glDeleteBuffers(1, &VBO);
   glfwTerminate();
-}
+};
+//-----------------------------------------------------------------------------------------
 
-
+//-----------------------------------------------------------------------------------------
 void updateModelsMatrix(Eigen::MatrixXf* clouds, int nClouds) {
-  float meanSquaredError = 0;
-  srtTransformation srt;
-  Eigen::MatrixXf* indexMatrix;
-  int maxIter = 500;
-  for (int iiter = 0; iiter < maxIter; ++iiter) {
-    std::cout << "Epoch: "  << iiter << " \n";
-    indexMatrix = nearestNeighbors(clouds, nClouds);
-    groupmap groups;
-    findGroups(indexMatrix, nClouds, groups);
-    delete [] indexMatrix;
-    Centroid centroid(clouds, nClouds, groups);
+  gpaipc(clouds, nClouds, 500, model, true);
+};
+//-----------------------------------------------------------------------------------------
 
-    Eigen::MatrixXf current;
-    Eigen::MatrixXf target;
+//-----------------------------------------------------------------------------------------
+/*
+cv::Mat generateCalibrationMat(float fx, float fy, float x0, float y0) {
+  float data[16] = {fx, 0, x0,
+                    0, fy, y0,
+                    0, 0, 1};
+  cv::Mat K = cv::Mat(3, 3, CV_32F, data);
 
-    // run procrustes for all the clouds with the centroid
-    for (int i = 0; i < nClouds; ++i) {
-      target = centroid.centroidByCloudNum(i);
-      current = centroid.cloudByCloudNum(i);
-      srt = procrustes(current, target);
-      clouds[i] = srtWarp(clouds[i], srt);
-      float meanSquaredError = eigenMSE(target, current);
-
-      std::cout << "   Loss (MSE) (cloud" << i << "): "  << meanSquaredError;
-      std::cout << " (using " << target.rows() << " mutual neighbors)" << '\n';
-
-      float newModel[16] = {srt.R(0,0), srt.R(1,0), srt.R(2,0), 0,
-                            srt.R(0,1), srt.R(1,1), srt.R(2,1), 0,
-                            srt.R(0,2), srt.R(1,2), srt.R(2,2), 0,
-                            srt.t(0), srt.t(1), srt.t(2), 1};
-
-
-      g_display_mutex.lock();
-      model[i] *= glm::make_mat4(newModel);
-      g_display_mutex.unlock();
-    }
-  }
-}
-
-
-
-int main()
-{
-    Eigen::MatrixXf* clouds;
-    clouds = new Eigen::MatrixXf [NCLOUDS];
-    std::vector<float> cloud_vec;
-    std::string root = "../data/";
-    std::string path;
-    std::string view_no;
-
-    for(int i = 0; i < NCLOUDS; ++i) {
-      view_no = std::to_string(i);
-      path = root + "bunnyview" + view_no + ".obj";
-      cloud_vec = readObj(path.c_str());
-      clouds[i] = vectorToEigen(cloud_vec);
-      clouds[i] /= 20;
-    }
-
-    int nVertices = clouds[0].rows();
-
-    float *vertices[NCLOUDS];
-    std::vector<float> vecs[NCLOUDS];
-
-    for (int i = 0; i < NCLOUDS; ++i) {
-      vecs[i] = eigenToVector(clouds[i]);
-      vertices[i] = vecs[i].data();
-    }
-
-    std::future<void> drawResult(std::async(drawThread, vertices, nVertices, NCLOUDS, sizeof(float)*nVertices*3));
-    std::string startGPA;
-    std::cin >> startGPA;
-    std::future<void> updateModelsMatrixResult(std::async(updateModelsMatrix, clouds, NCLOUDS));
-
-    drawResult.get();
-    updateModelsMatrixResult.get();
-
-    return 0;
-}
+  return K;
+};*/
+//-----------------------------------------------------------------------------------------
